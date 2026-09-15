@@ -9,12 +9,10 @@ const io = new Server(server);
 app.use(express.static(path.join(__dirname)));
 app.get('/health', (_, res) => res.json({ ok: true }));
 
-// Bộ địa điểm theo đúng phong cách bộ thẻ tham chiếu.
 const locations = [
-  'Corporate Party','Crusader Army','Day Spa','Embassy','Hospital',
-  'Military Base','Movie Studio','Nightclub','Ocean Liner','Passenger Train',
-  'Polar Station','Police Station','Restaurant','School','Service Station',
-  'Submarine','Supermarket','Theater','University','Zoo'
+  'Rạp hát','Nhà hàng','Bãi biển','Trường học','Siêu thị','Trạm xăng','Rạp xiếc','Trạm dịch vụ','Lều gánh xiếc','Bệnh viện',
+  'Quân Thập Tự','Tàu hỏa','Ngân hàng','Máy bay','Đồn cảnh sát','Tàu cướp biển','Hãng phim','Căn cứ quân sự','Tàu ngầm','Tàu du lịch',
+  'Trạm Bắc Cực','Khách sạn','Tiệc công ty','Spa','Đại học','Đại sứ quán','Trạm vũ trụ','Sòng bạc','Nhà thờ','Sở thú'
 ];
 const rooms = new Map();
 const makeCode = () => { let c; do c = Math.random().toString(36).slice(2,8).toUpperCase(); while(rooms.has(c)); return c; };
@@ -122,16 +120,12 @@ io.on('connection', socket => {
     room.askedIds.add(to.id);
     room.lastQuestionerId=from.id;
     room.pending=null;
-
-    // Người vừa trả lời sẽ là người hỏi tiếp theo.
     room.turnIndex=room.players.findIndex(p=>p.id===to.id);
     if(room.turnIndex<0) room.turnIndex=0;
 
-    // KẾT THÚC VÒNG: tất cả người chơi đã được hỏi và đã trả lời.
     if(room.players.every(p=>room.askedIds.has(p.id))){
       return endRound(room,'🏁 Kết thúc vòng!',`Tất cả ${room.players.length} người chơi đã được hỏi và trả lời. Spy được công bố.`,null);
     }
-
     emitRoom(room);
   });
 
