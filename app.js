@@ -2,30 +2,8 @@ const socket=io();
 const state={screen:'lobby',room:null,selfId:null,players:[],hostId:null,phase:'lobby',round:0,turnIndex:0,timer:0,timerId:null,roleVisible:true,role:null,location:null,qa:[],scores:{},pendingAnswer:false,locations:[],askedIds:[],lastQuestionerId:null};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
-const SPRITE_URL='https://benjaminsboardgameblog.files.wordpress.com/2018/12/img_1151-1.jpg';
-const LOCATION_META={
-  'Corporate Party':{vi:'Tiệc công ty',x:'3.2%',y:'9.2%'},
-  'Crusader Army':{vi:'Quân Thập tự',x:'28%',y:'9.6%'},
-  'Day Spa':{vi:'Spa',x:'53.2%',y:'8.8%'},
-  'Embassy':{vi:'Đại sứ quán',x:'78.2%',y:'7.7%'},
-  'Hospital':{vi:'Bệnh viện',x:'100%',y:'8.1%'},
-  'Military Base':{vi:'Căn cứ quân sự',x:'3%',y:'43.1%'},
-  'Movie Studio':{vi:'Hãng phim',x:'27.6%',y:'41.2%'},
-  'Nightclub':{vi:'Hộp đêm',x:'53%',y:'40.4%'},
-  'Ocean Liner':{vi:'Tàu du lịch',x:'78.6%',y:'40.4%'},
-  'Passenger Train':{vi:'Tàu hỏa',x:'100%',y:'40%'},
-  'Polar Station':{vi:'Trạm Bắc Cực',x:'1.2%',y:'73.5%'},
-  'Police Station':{vi:'Đồn cảnh sát',x:'27.2%',y:'70.8%'},
-  'Restaurant':{vi:'Nhà hàng',x:'52.2%',y:'70%'},
-  'School':{vi:'Trường học',x:'79%',y:'70%'},
-  'Service Station':{vi:'Trạm xăng',x:'100%',y:'69.6%'},
-  'Submarine':{vi:'Tàu ngầm',x:'0%',y:'100%'},
-  'Supermarket':{vi:'Siêu thị',x:'26%',y:'100%'},
-  'Theater':{vi:'Nhà hát',x:'52.4%',y:'99.2%'},
-  'University':{vi:'Đại học',x:'78.8%',y:'98.8%'},
-  'Zoo':{vi:'Sở thú',x:'100%',y:'97.7%'}
-};
-const viLocation=loc=>LOCATION_META[loc]?.vi||loc;
+const LOCATION_ICONS=['🎭','🍽️','🏖️','🏫','🛒','⛽','🎪','🔧','🎟️','🏥','⚔️','🚂','🏦','✈️','👮','🏴‍☠️','🎬','🪖','🚢','🛳️','🧊','🏨','🥂','💆','🎓','🏛️','🚀','🎰','⛪','🦒'];
+const viLocation=loc=>loc;
 function showScreen(n){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));$(n+'Screen').classList.add('active');state.screen=n;}
 function setMsg(m){$('lobbyMessage').textContent=m||'';}
 function renderLobby(){
@@ -38,10 +16,7 @@ function renderLobby(){
 }
 function renderTimer(){const m=Math.floor(state.timer/60).toString().padStart(2,'0'),s=(state.timer%60).toString().padStart(2,'0');$('timer').textContent=`${m}:${s}`;}
 function renderLocations(){
-  $('locationGrid').innerHTML=state.locations.map(loc=>{
-    const meta=LOCATION_META[loc]||{vi:loc,x:'50%',y:'50%'};
-    return `<div class="location-card"><div class="location-art" style="background-image:url('${SPRITE_URL}');background-position:${meta.x} ${meta.y};"></div><div class="location-name">${esc(meta.vi)}</div></div>`;
-  }).join('');
+  $('locationGrid').innerHTML=state.locations.map((loc,i)=>`<div class="location-card"><div class="location-art">${LOCATION_ICONS[i%LOCATION_ICONS.length]}</div><div class="location-name"><span class="location-number">${i+1}. </span>${esc(loc)}</div></div>`).join('');
 }
 function renderGame(){
   showScreen('game');
@@ -67,7 +42,6 @@ function renderGame(){
 }
 function renderQA(){$('qaLog').innerHTML=state.qa.length?state.qa.map((x,i)=>`<div class="qa-item"><div class="qa-meta">Lượt ${i+1} · <strong>${esc(x.from)}</strong> hỏi <strong>${esc(x.to)}</strong></div><div><strong>Hỏi:</strong> ${esc(x.q)}</div><div class="answer-line"><strong>Trả lời:</strong> ${esc(x.a)}</div></div>`).join(''):'<div class="muted small">Chưa có câu hỏi nào.</div>';}
 function renderScores(){$('scoreList').innerHTML=state.players.map(p=>`<div class="score-row"><span>${esc(p.name)}</span><strong>${state.scores[p.id]||0}</strong></div>`).join('');}
-function sync(s){Object.assign(state,s);if(state.phase==='lobby'){showScreen('room');renderLobby();}else if(state.phase==='game')renderGame();}
 $('createRoomBtn').onclick=()=>{const name=$('playerName').value.trim();if(!name)return setMsg('Nhập tên trước.');socket.emit('create_room',{name});};
 $('joinRoomBtn').onclick=()=>{const name=$('playerName').value.trim(),code=$('roomCode').value.trim().toUpperCase();if(!name||!code)return setMsg('Nhập tên và mã phòng.');socket.emit('join_room',{name,code});};
 $('startBtn').onclick=()=>socket.emit('start_game');
