@@ -1,13 +1,62 @@
 (() => {
-  const BASE='https://static.wixstatic.com/media/3eae31_b5319f5252bc489e9b82ff2d27ecdbe2~mv2.jpg';
-  const ROWS=['/assets/location-rows/row0.webp','/assets/location-rows/row1.webp','/assets/location-rows/row2.webp','/assets/location-rows/row3.webp','/assets/location-rows/row4.webp','/assets/location-rows/row5.webp'];
-  const POS={'Bệnh viện':[0,0],'Trạm Bắc Cực':[1,0],'Tàu chở khách':[2,0],'Nhà hàng':[3,0],'Siêu thị':[4,0],'Trạm dịch vụ':[0,1],'Lều gánh xiếc':[1,1],'Bãi biển':[2,1],'Khách sạn':[3,1],'Trường học':[4,1],'Tàu ngầm':[0,2],'Rạp hát':[1,2],'Sở thú':[2,2],'Quân Thập Tự':[3,2],'Hội chợ':[4,2],'Tàu biển':[0,3],'Spa':[1,3],'Sòng bạc':[2,3],'Câu lạc bộ đêm':[3,3],'Căn cứ quân sự':[4,3],'Đại sứ quán':[0,4],'Đại học':[1,4],'Hãng phim':[2,4],'Trạm vũ trụ':[3,4],'Tàu cướp biển':[4,4],'Máy bay':[0,5],'Đồn cảnh sát':[1,5],'Ngân hàng':[2,5],'Tiệc công ty':[3,5],'Công viên giải trí':[4,5]};
-  const CUSTOM=new Set(['Câu lạc bộ đêm','Tàu biển','Tàu cướp biển','Tàu chở khách','Trạm Bắc Cực','Căn cứ quân sự','Đại học','Sở thú','Rạp hát','Đồn cảnh sát']);
-  const rowInfo=[];
-  ROWS.forEach((src,i)=>{const im=new Image();im.onload=()=>{rowInfo[i]=im.naturalWidth>=im.naturalHeight?'h':'v';window.renderLocations&&renderLocations();};im.src=src;});
-  const customStyle=name=>{const p=POS[name]||[0,0],src=ROWS[p[1]],ori=rowInfo[p[1]]||'h';return ori==='v'?`background-image:url("${src}");background-size:100% 500%;background-position:50% ${p[0]*25}%;background-repeat:no-repeat;`: `background-image:url("${src}");background-size:500% 100%;background-position:${p[0]*25}% 50%;background-repeat:no-repeat;`};
-  const baseStyle=name=>{const p=POS[name]||[0,0];return `background-image:url("${BASE}");background-size:500% 600%;background-position:${p[0]*25}% ${p[1]*20}%;background-repeat:no-repeat;`};
-  window.renderLocations=function(){ensureLocationModal();const names=state.locationOrder.length?state.locationOrder:LOCATION_NAMES;$('locationGrid').innerHTML=names.map((name,i)=>`<div class="location-card" title="${esc(name)}" data-location="${esc(name)}" style="${CUSTOM.has(name)?customStyle(name):baseStyle(name)}"><span class="sr-only">${i+1}. ${esc(name)}</span></div>`).join('');document.querySelectorAll('.location-card').forEach(card=>card.addEventListener('click',()=>window.openLocationModal(card.dataset.location)))};
-  window.openLocationModal=function(name){ensureLocationModal();const m=$('locationModal'),img=$('locationModalImage');img.style.cssText=(CUSTOM.has(name)?customStyle(name):baseStyle(name))+'width:100%;aspect-ratio:1.5;border-radius:12px;background-color:#111;box-shadow:0 10px 40px rgba(0,0,0,.5)';$('locationModalName').textContent=name;m.classList.add('show');m.setAttribute('aria-hidden','false')};
-  renderLocations();
+  // Custom location artwork supplied for this game.
+  // The sprite is 5 columns x 2 rows, in this exact order:
+  // Câu lạc bộ đêm, Tàu biển, Tàu cướp biển, Tàu chở khách, Trạm Bắc Cực,
+  // Căn cứ quân sự, Đại học, Sở thú, Rạp hát, Đồn cảnh sát.
+  const SPRITE = '/assets/custom-locations-10.jpg';
+  const POS = {
+    'Câu lạc bộ đêm':[0,0],
+    'Tàu biển':[1,0],
+    'Tàu cướp biển':[2,0],
+    'Tàu chở khách':[3,0],
+    'Trạm Bắc Cực':[4,0],
+    'Căn cứ quân sự':[0,1],
+    'Đại học':[1,1],
+    'Sở thú':[2,1],
+    'Rạp hát':[3,1],
+    'Đồn cảnh sát':[4,1]
+  };
+
+  const styleFor = (name) => {
+    const p = POS[name];
+    if (!p) return '';
+    return `background-image:url("${SPRITE}");background-size:500% 200%;background-position:${p[0]*25}% ${p[1]*100}%;background-repeat:no-repeat;background-color:#eee;`;
+  };
+
+  const patchCard = (card) => {
+    const name = card.dataset.location;
+    if (!POS[name]) return;
+    card.style.cssText += ';' + styleFor(name);
+  };
+
+  const patchModal = () => {
+    const nameEl = document.getElementById('locationModalName');
+    const img = document.getElementById('locationModalImage');
+    if (!nameEl || !img) return;
+    const name = nameEl.textContent.trim();
+    if (!POS[name]) return;
+    img.style.cssText += ';' + styleFor(name);
+  };
+
+  const patch = () => {
+    document.querySelectorAll('.location-card').forEach(patchCard);
+    patchModal();
+  };
+
+  const start = () => {
+    const grid = document.getElementById('locationGrid');
+    if (!grid) return false;
+    new MutationObserver(patch).observe(grid, { childList:true, subtree:true });
+    patch();
+    return true;
+  };
+
+  if (!start()) {
+    const observer = new MutationObserver(() => {
+      if (start()) observer.disconnect();
+    });
+    observer.observe(document.documentElement, { childList:true, subtree:true });
+  }
+
+  document.addEventListener('click', () => setTimeout(patchModal, 0));
 })();
