@@ -1,0 +1,3 @@
+# 30 địa điểm Spyfall
+
+Rạp hát · Nhà hàng · Bãi biển · Trường học · Siêu thị · Trạm xăng · Rạp xiếc · Trạm dịch vụ · Lều gánh xiếc · Bệnh viện · Quân Thập Tự · Tàu hỏa · Ngân hàng · Máy bay · Đồn cảnh sát · Tàu cướp biển · Hãng phim · Căn cứ quân sự · Tàu ngầm · Tàu du lịch · Trạm Bắc Cực · Khách sạn · Tiệc công ty · Spa · Đại học · Đại sứ quán · Trạm vũ trụ · Sòng bạc · Nhà thờ · Sở thú
