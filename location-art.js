@@ -1,0 +1,1 @@
+const LOCATION_ART = {};
