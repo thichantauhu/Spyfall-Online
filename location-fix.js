@@ -1,9 +1,8 @@
 (() => {
-  // Custom location artwork supplied for this game.
-  // The sprite is 5 columns x 2 rows, in this exact order:
-  // Câu lạc bộ đêm, Tàu biển, Tàu cướp biển, Tàu chở khách, Trạm Bắc Cực,
-  // Căn cứ quân sự, Đại học, Sở thú, Rạp hát, Đồn cảnh sát.
-  const SPRITE = '/assets/custom-locations-10.jpg';
+  // 10 custom images are stored as one 5x2 sprite.
+  // Row 1: Night Club, Cruise Ship, Pirate Ship, Passenger Boat, Arctic Station.
+  // Row 2: Military Base, University, Zoo, Theater, Police Station.
+  const SPRITE = '/assets/custom-locations-10.webp?v=20260916';
   const POS = {
     'Câu lạc bộ đêm':[0,0],
     'Tàu biển':[1,0],
@@ -17,46 +16,35 @@
     'Đồn cảnh sát':[4,1]
   };
 
-  const styleFor = (name) => {
-    const p = POS[name];
-    if (!p) return '';
-    return `background-image:url("${SPRITE}");background-size:500% 200%;background-position:${p[0]*25}% ${p[1]*100}%;background-repeat:no-repeat;background-color:#eee;`;
-  };
-
-  const patchCard = (card) => {
+  function apply(card) {
     const name = card.dataset.location;
-    if (!POS[name]) return;
-    card.style.cssText += ';' + styleFor(name);
-  };
+    const p = POS[name];
+    if (!p) return;
+    card.style.backgroundImage = `url("${SPRITE}")`;
+    card.style.backgroundSize = '500% 200%';
+    card.style.backgroundPosition = `${p[0] * 25}% ${p[1] * 100}%`;
+    card.style.backgroundRepeat = 'no-repeat';
+  }
 
-  const patchModal = () => {
+  function patchModal() {
     const nameEl = document.getElementById('locationModalName');
     const img = document.getElementById('locationModalImage');
     if (!nameEl || !img) return;
-    const name = nameEl.textContent.trim();
-    if (!POS[name]) return;
-    img.style.cssText += ';' + styleFor(name);
-  };
-
-  const patch = () => {
-    document.querySelectorAll('.location-card').forEach(patchCard);
-    patchModal();
-  };
-
-  const start = () => {
-    const grid = document.getElementById('locationGrid');
-    if (!grid) return false;
-    new MutationObserver(patch).observe(grid, { childList:true, subtree:true });
-    patch();
-    return true;
-  };
-
-  if (!start()) {
-    const observer = new MutationObserver(() => {
-      if (start()) observer.disconnect();
-    });
-    observer.observe(document.documentElement, { childList:true, subtree:true });
+    const p = POS[nameEl.textContent.trim()];
+    if (!p) return;
+    img.style.backgroundImage = `url("${SPRITE}")`;
+    img.style.backgroundSize = '500% 200%';
+    img.style.backgroundPosition = `${p[0] * 25}% ${p[1] * 100}%`;
+    img.style.backgroundRepeat = 'no-repeat';
   }
 
-  document.addEventListener('click', () => setTimeout(patchModal, 0));
+  function patch() {
+    document.querySelectorAll('.location-card').forEach(apply);
+    patchModal();
+  }
+
+  const observer = new MutationObserver(patch);
+  observer.observe(document.documentElement, {childList:true, subtree:true});
+  patch();
+  document.addEventListener('click', () => setTimeout(patch, 0));
 })();
