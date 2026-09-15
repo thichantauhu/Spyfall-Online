@@ -9,7 +9,13 @@ const io = new Server(server);
 app.use(express.static(path.join(__dirname)));
 app.get('/health', (_, res) => res.json({ ok: true }));
 
-const locations = ['Airplane','Embassy','Police Station','Bank','Hospital','Restaurant','Beach','Hotel','School','Cathedral','Military Base','Service Station','Casino','Movie Studio','Space Station','Circus Tent','Ocean Liner','Submarine','Corporate Party','Passenger Train','Supermarket','Crusader Army','Pirate Ship','Theater','Day Spa','Polar Station','University'];
+// Bộ địa điểm theo đúng phong cách bộ thẻ tham chiếu.
+const locations = [
+  'Corporate Party','Crusader Army','Day Spa','Embassy','Hospital',
+  'Military Base','Movie Studio','Nightclub','Ocean Liner','Passenger Train',
+  'Polar Station','Police Station','Restaurant','School','Service Station',
+  'Submarine','Supermarket','Theater','University','Zoo'
+];
 const rooms = new Map();
 const makeCode = () => { let c; do c = Math.random().toString(36).slice(2,8).toUpperCase(); while(rooms.has(c)); return c; };
 const publicState = room => ({
@@ -95,9 +101,7 @@ io.on('connection', socket => {
     if(!room||room.phase!=='game'||room.pending||room.players[room.turnIndex]?.id!==socket.id) return;
     const target=room.players.find(p=>p.id===targetId);
     if(!target||target.id===socket.id) return;
-    // A player may not be asked twice during the same question cycle.
-    if(room.askedIds.has(target.id)) return socket.emit('error_msg','Người này đã được hỏi trong lượt hiện tại.');
-    // The person who just asked you cannot be selected immediately in return.
+    if(room.askedIds.has(target.id)) return socket.emit('error_msg','Người này đã được hỏi trong vòng hiện tại.');
     if(room.lastQuestionerId===target.id) return socket.emit('error_msg','Không được hỏi lại người vừa hỏi bạn.');
     const q=String(question||'').trim().slice(0,180);
     if(!q) return;
@@ -119,12 +123,15 @@ io.on('connection', socket => {
     room.lastQuestionerId=from.id;
     room.pending=null;
 
-    // The person who answered becomes the next questioner.
+    // Người vừa trả lời sẽ là người hỏi tiếp theo.
     room.turnIndex=room.players.findIndex(p=>p.id===to.id);
     if(room.turnIndex<0) room.turnIndex=0;
 
-    // Once every player has been asked, start a fresh question cycle.
-    if(room.players.every(p=>room.askedIds.has(p.id))) room.askedIds=new Set();
+    // KẾT THÚC VÒNG: tất cả người chơi đã được hỏi và đã trả lời.
+    if(room.players.every(p=>room.askedIds.has(p.id))){
+      return endRound(room,'🏁 Kết thúc vòng!',`Tất cả ${room.players.length} người chơi đã được hỏi và trả lời. Spy được công bố.`,null);
+    }
+
     emitRoom(room);
   });
 
