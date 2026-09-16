@@ -20,9 +20,8 @@
     btn.onclick=()=>{groupActive=true;socket.emit('start_group_accusation');window.renderSide()};
     if(groupActive){
       const panel=document.createElement('div');panel.id='groupAccusePanel';panel.className='vote-card';
-      const others=state.players.filter(p=>p.id!==state.selfId);
       const mine=groupVotes[state.selfId];
-      panel.innerHTML=`<div class="eyebrow">TỐ CÁO CHUNG</div><h3>Tất cả người chơi phải bỏ 1 phiếu</h3><p class="muted small">Đã bỏ phiếu: ${Object.keys(groupVotes).length}/${state.players.length}</p><div class="vote-list">${others.map(p=>`<button type="button" class="vote-btn ${mine===p.id?'voted':''}" data-group-target="${p.id}" ${mine?'disabled':''}>${esc2(p.name)}<span>${Object.values(groupVotes).filter(x=>x===p.id).length||''}</span></button>`).join('')}</div>`;
+      panel.innerHTML=`<div class="eyebrow">TỐ CÁO CHUNG</div><h3>Tất cả người chơi phải bỏ 1 phiếu</h3><p class="muted small">Đã bỏ phiếu: ${Object.keys(groupVotes).length}/${state.players.length}</p><div class="vote-list">${state.players.map(p=>`<button type="button" class="vote-btn ${mine===p.id?'voted':''}" data-group-target="${p.id}" ${mine?'disabled':''}>${esc2(p.name)}${p.id===state.selfId?' (Bạn)':''}<span>${Object.values(groupVotes).filter(x=>x===p.id).length||''}</span></button>`).join('')}</div>`;
       card.parentNode.insertBefore(panel,card.nextSibling);
       panel.querySelectorAll('[data-group-target]').forEach(b=>b.onclick=()=>socket.emit('group_accuse_vote',{targetId:b.dataset.groupTarget}));
     }
