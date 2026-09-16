@@ -11,6 +11,14 @@ function renderRoleVariant(){
  info.textContent=spy?'Bạn không biết địa điểm và không có vai trò. Hãy suy luận!':`📍 Địa điểm: ${role?.location||''}`;
  hide.textContent=state.roleVisible?'Ẩn thông tin':'Hiện thông tin';card.classList.toggle('role-hidden',!state.roleVisible);
 }
+function hook(){
+ if(typeof renderGame!=='function')return setTimeout(hook,50);
+ const original=renderGame;
+ renderGame=function(){original();renderRoleVariant()};
+ const btn=document.getElementById('hideRoleBtn');
+ if(btn)btn.onclick=()=>{state.roleVisible=!state.roleVisible;renderRoleVariant()};
+ renderRoleVariant();
+}
+hook();
 window.renderRoleVariant=renderRoleVariant;
-const originalRenderGame=window.renderGame;
 })();
