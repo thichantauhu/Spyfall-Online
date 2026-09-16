@@ -7,7 +7,7 @@ const locationCode=`const locations=${JSON.stringify(locations)};`;
 function patch(file,pattern,replacement){
   const p=path.join(__dirname,file);
   let s=fs.readFileSync(p,'utf8');
-  if(!pattern.test(s)) throw new Error(`Không tìm thấy locations trong ${file}`);
+  if(!pattern.test(s)) throw new Error(`Không tìm thấy nội dung cần sửa trong ${file}`);
   s=s.replace(pattern,replacement);
   fs.writeFileSync(p,s,'utf8');
 }
@@ -15,9 +15,14 @@ function patch(file,pattern,replacement){
 patch('server-v2.js',/const locations=\[[^\n]*\];/,locationCode);
 patch('app.js',/const locations=\[[^\n]*\];/,locationCode);
 
-const appPath=path.join(__dirname,'index.html');
-let html=fs.readFileSync(appPath,'utf8');
-html=html.replace('📍 BẢNG ĐỊA ĐIỂM (30)','📍 BẢNG ĐỊA ĐIỂM (20)');
-fs.writeFileSync(appPath,html,'utf8');
+const appPath=path.join(__dirname,'app.js');
+let app=fs.readFileSync(appPath,'utf8');
+app=app.replaceAll('/assets/${encodeURIComponent(name)}.webp','/assets/${encodeURIComponent(name==="Tàu hỏa"?"Tàu chở khách":name)}.webp');
+fs.writeFileSync(appPath,app,'utf8');
+
+const indexPath=path.join(__dirname,'index.html');
+let html=fs.readFileSync(indexPath,'utf8');
+html=html.replaceAll('📍 BẢNG ĐỊA ĐIỂM (30)','📍 BẢNG ĐỊA ĐIỂM (20)');
+fs.writeFileSync(indexPath,html,'utf8');
 
 require('./server-v2.js');
