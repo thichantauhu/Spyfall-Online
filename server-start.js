@@ -25,4 +25,7 @@ let html=fs.readFileSync(indexPath,'utf8');
 html=html.replaceAll('📍 BẢNG ĐỊA ĐIỂM (30)','📍 BẢNG ĐỊA ĐIỂM (20)');
 fs.writeFileSync(indexPath,html,'utf8');
 
+// Hiển thị đầy đủ câu hỏi trong khung chat chung để tất cả người chơi đều thấy.
+patch('server-v2.js',/addChat\(r,''\,`❓ \$\{r\.players\.find\(p=>p\.id===socket\.id\)\.name\} → \$\{t\.name\}`\);/,"addChat(r,'',`❓ ${r.players.find(p=>p.id===socket.id).name} → ${t.name}: ${q}`);");
+
 require('./server-v2.js');
