@@ -1,0 +1,1 @@
+(()=>{const original=window.io;window.io=function(...args){const socket=original(...args);window.spyfallSocket=socket;return socket}})();
