@@ -12,7 +12,7 @@
     const old=$('groupAccuseBtn');if(old)old.remove();
     const oldPanel=$('groupAccusePanel');if(oldPanel)oldPanel.remove();
     const solo=$('accuseBtn');
-    if(solo){solo.textContent='🚨 Tố cáo cá nhân';solo.disabled=!active;}
+    if(solo){solo.textContent='🚨 Tố cáo cá nhân';solo.disabled=!active||groupActive;}
     const btn=document.createElement('button');
     btn.id='groupAccuseBtn';btn.className='danger';btn.textContent=groupActive?'🗳️ Đang tố cáo chung':'🗳️ Tố cáo chung';btn.disabled=!active||groupActive;
     const guess=card.querySelector('#guessBtn');
