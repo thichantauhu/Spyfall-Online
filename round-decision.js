@@ -1,0 +1,34 @@
+(()=>{
+  const $=id=>document.getElementById(id);
+  const esc=s=>String(s??'').replace(/[&<>\'\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[c]));
+  let voted=null;
+  let draft='';
+
+  function remove(){document.getElementById('roundDecisionOverlay')?.remove();}
+
+  function render(){
+    if(state.phase!=='round_decision'){remove();return;}
+    let el=$('roundDecisionOverlay');
+    if(!el){el=document.createElement('div');el.id='roundDecisionOverlay';document.body.appendChild(el)}
+    const chat=state.chat||[];
+    const messages=chat.map(x=>`<div class="rd-chat-item ${x.system?'system':''}"><b>${esc(x.from||'Hệ thống')}</b><div>${esc(x.message)}</div></div>`).join('')||'<div class="muted small">Chưa có tin nhắn.</div>';
+    el.innerHTML=`<div class="rd-backdrop"><div class="rd-panel">
+      <div class="eyebrow">KẾT THÚC VÒNG ${state.round}</div>
+      <h1>⚠️ Có chơi thêm 1 vòng?</h1>
+      <p class="rd-warning">Nếu chọn <strong>THÊM VÒNG</strong>: vòng tiếp theo có thêm <strong>1 phút/người</strong> và <strong>điểm cuối cùng giảm 1/2</strong> (4→2, 2→1, 1→0).</p>
+      <p class="muted small">Phiếu kín. Hệ thống chỉ công bố kết quả theo số đông khi tất cả đã bỏ phiếu. Hòa phiếu thì <strong>THÊM VÒNG</strong>.</p>
+      <div class="rd-votes"><button id="rdYes" class="${voted===true?'selected':''}" ${voted!==null?'disabled':''}>🔄 THÊM VÒNG</button><button id="rdNo" class="secondary ${voted===false?'selected':''}" ${voted!==null?'disabled':''}>⛔ KHÔNG THÊM</button></div>
+      <div id="rdVoteStatus" class="rd-status">${voted===null?'Chưa bỏ phiếu.': '🔒 Bạn đã bỏ phiếu kín.'}</div>
+      <div class="rd-chat"><div class="rd-chat-head"><strong>💬 Chat chung</strong><span class="pill">PHIẾU KÍN</span></div><div id="rdChatLog" class="rd-chat-log">${messages}</div><div class="rd-compose"><input id="rdChatInput" maxlength="300" placeholder="Trao đổi với mọi người..."><button id="rdChatSend">Gửi</button></div></div>
+    </div></div>`;
+    const input=$('rdChatInput');if(input){input.value=draft;input.oninput=()=>draft=input.value;input.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();sendChat()}}}
+    $('rdYes').onclick=()=>vote(true);$('rdNo').onclick=()=>vote(false);$('rdChatSend').onclick=sendChat;
+    const log=$('rdChatLog');if(log)log.scrollTop=log.scrollHeight;
+  }
+  function vote(v){if(voted!==null)return;voted=v;render();socket.emit('round_continue_vote',{continueRound:v})}
+  function sendChat(){const input=$('rdChatInput');const text=input?.value.trim();if(!text)return;socket.emit('chat_message',{message:text});draft='';input.value='';input.focus()}
+
+  socket.on('round_vote_ack',x=>{voted=!!x.continueRound;render()});
+  socket.on('round_decision_start',()=>{voted=null;draft='';render()});
+  socket.on('room_state',()=>{if(state.phase==='round_decision')render();else remove()});
+})();
