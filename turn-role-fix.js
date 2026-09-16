@@ -10,12 +10,12 @@
     if(state.phase!=='game')return;
     if(pending){
       label.textContent=`Lượt ${name(pending.fromId)} → ${name(pending.toId)}`;
-      if(instruction)instruction.textContent=pending.toId===state.selfId?'Trả lời câu hỏi bên dưới.':'Đang chờ câu trả lời.';
+      if(instruction)instruction.textContent=pending.toId===state.selfId?'Trả lời câu hỏi bên dưới.':`Đang chờ ${name(pending.toId)} trả lời.`;
       return;
     }
     const current=players[state.turnIndex];
     if(current){
-      label.textContent=current.id===state.selfId?'LƯỢT CỦA BẠN':`Lượt của ${current.name}`;
+      label.textContent=`Lượt của ${current.name}`;
       if(instruction)instruction.textContent=current.id===state.selfId?'Chọn một người và đặt câu hỏi.':`Đang chờ ${current.name} đặt câu hỏi.`;
     }
   }
