@@ -5,7 +5,7 @@
     guessBtn:{title:'Spy đoán địa điểm',html:'<div>• Đúng địa điểm: <strong>Spy +4 điểm</strong>.</div><div>• Sai địa điểm: <strong>Spy -2 điểm</strong>, tất cả người chơi thường <strong>+1 điểm</strong>.</div>'}
   };
   const style=document.createElement('style');
-  style.textContent='.action-rule-row{display:flex;align-items:center;gap:6px;margin-bottom:8px}.action-rule-row>button{flex:1;margin:0}.action-rule-info{width:24px;height:24px;min-width:24px;border-radius:50%;border:1px solid #cbd5e1;background:#fff;color:#111827;font-weight:800;cursor:pointer;padding:0;line-height:22px}.action-rule-pop{position:absolute;z-index:9999;width:min(320px,calc(100vw - 50px));background:#fff;border:1px solid #d7dee8;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.14);padding:12px 14px;color:#1f2937;font-size:13px;line-height:1.55;text-align:left}.action-rule-pop h4{margin:0 0 7px;font-size:14px}.action-rule-pop div{margin:4px 0}.action-rule-info-wrap{position:relative;display:flex;align-items:center}';
+  style.textContent='.action-rule-row{display:flex;align-items:center;gap:6px;margin-bottom:8px}.action-rule-row>button{flex:1;margin:0}.action-rule-info{width:24px;height:24px;min-width:24px;border-radius:50%;border:1px solid #cbd5e1;background:#fff;color:#111827;font-weight:800;cursor:pointer;padding:0;line-height:22px}.action-rule-pop{position:absolute;z-index:9999;width:min(320px,calc(100vw - 50px));background:#fff;border:1px solid #d7dee8;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.14);padding:12px 14px;color:#1f2937;font-size:13px;line-height:1.55;text-align:left}.action-rule-pop h4{margin:0 0 7px;font-size:14px}.action-rule-pop div{margin:4px 0}.action-rule-info-wrap{position:relative;display:flex;align-items:center}.action-pause-row{display:flex;align-items:center;width:100%;margin:0}.action-pause-row>#pauseBtn{display:block!important;flex:1;width:100%;min-height:44px;margin:0;background:transparent!important;border:1px solid transparent}.action-pause-row>#pauseBtn.pause-filled{background:#eef0f2!important;border-color:#d8dde3!important}';
   document.head.appendChild(style);
   function closePop(){document.querySelectorAll('.action-rule-pop').forEach(x=>x.remove())}
   function addTip(id){
@@ -27,6 +27,19 @@
     const h=document.querySelector('.action-card-v4 h2');
     if(h)h.innerHTML='Hành động <span style="font-size:.8em;font-weight:800;">- BẤT CỨ LÚC NÀO</span>';
     addTip('accuseBtn'); addTip('groupAccuseBtn'); addTip('guessBtn');
+    const card=document.querySelector('.action-card-v4');
+    const pause=document.getElementById('pauseBtn');
+    const extra=document.getElementById('extraRoundVoteBtn');
+    const leave=document.getElementById('leaveGameBtn');
+    if(card&&pause){
+      let row=pause.closest('.action-pause-row');
+      if(!row){row=document.createElement('div');row.className='action-pause-row';pause.parentNode.insertBefore(row,pause);row.appendChild(pause)}
+      if(extra&&extra.parentNode===card)extra.insertAdjacentElement('afterend',row);
+      else if(leave&&leave.parentNode===card)leave.insertAdjacentElement('beforebegin',row);
+      else card.appendChild(row);
+      pause.textContent=state.paused?'▶️ Tiếp tục':'⏸️ Tạm dừng';
+      pause.classList.toggle('pause-filled',!!state.paused);
+    }
   }
   const oldRender=window.renderSide;
   if(oldRender)window.renderSide=function(){oldRender();decorate()};
