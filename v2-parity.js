@@ -1,5 +1,6 @@
 (()=>{
   const main=[120,150,180], extra=[60,90,120], locs=[20,25,30];
+  let livePreview=null;
   function boardTitle(){const title=document.querySelector('.board-title span');if(title&&Array.isArray(state.locations)&&state.locations.length)title.textContent=`📍 BẢNG ĐỊA ĐIỂM (${state.locations.length})`}
   function lobbySettings(){
     const box=document.querySelector('.room-settings'); if(!box)return;
@@ -23,21 +24,41 @@
   if(oldLobby)window.renderLobby=function(){oldLobby();lobbySettings()};
   function turnParity(){
     const current=state.players[state.turnIndex], pending=state.pending;
-    if(pending){
-      const from=state.players.find(p=>p.id===pending.fromId)?.name||'';
-      const to=state.players.find(p=>p.id===pending.toId)?.name||'';
-      $('turnLabel').textContent=`Lượt ${from} → ${to}`;
-      $('turnInstruction').textContent=pending.toId===state.selfId?'Trả lời câu hỏi bên dưới.':'Đang chờ câu trả lời.';
-      return;
-    }
     if(state.phase==='discussion'){$('turnLabel').textContent='THẢO LUẬN';$('turnInstruction').textContent='Tất cả đã được hỏi. Thảo luận và bỏ phiếu.';return}
     if(state.phase==='round_decision'){$('turnLabel').textContent='BIỂU QUYẾT';$('turnInstruction').textContent='Thảo luận kín về việc có thêm 1 vòng hay không.';return}
+    if(state.phase!=='game')return;
+    if(pending){
+      const toName=state.players.find(p=>p.id===pending.toId)?.name||'Người chơi';
+      $('turnLabel').textContent=`Lượt ${toName} trả lời`;
+      $('turnInstruction').textContent=pending.toId===state.selfId?'Trả lời câu hỏi bên dưới.':`Đang chờ ${toName} trả lời.`;
+      return;
+    }
+    if(current&&livePreview&&livePreview.fromId===current.id){
+      const fromName=state.players.find(p=>p.id===livePreview.fromId)?.name||current.name;
+      const toName=state.players.find(p=>p.id===livePreview.toId)?.name||'';
+      if(toName){$('turnLabel').textContent=`Lượt ${fromName} → ${toName}`;$('turnInstruction').textContent='Đặt câu hỏi cho người chơi đã chọn.';return}
+    }
+    livePreview=null;
     const myTurn=current?.id===state.selfId;
     $('turnLabel').textContent=myTurn?'LƯỢT CỦA BẠN':`LƯỢT: ${current?.name||''}`;
     $('turnInstruction').textContent=state.paused?'Game đang tạm dừng.':myTurn?'Chọn một người và đặt câu hỏi.':`Chờ ${current?.name||''} đặt câu hỏi.`;
   }
   window.renderTurn=turnParity;
-  socket.on('room_state',()=>setTimeout(()=>{lobbySettings();boardTitle();if(['game','discussion','round_decision'].includes(state.phase))turnParity()},0));
+  document.addEventListener('click',e=>{
+    const b=e.target.closest('[data-target]');
+    if(!b)return;
+    const current=state.players[state.turnIndex];
+    if(state.phase!=='game'||!current||current.id!==state.selfId||state.pending)return;
+    const targetId=b.dataset.target;
+    const target=state.players.find(p=>p.id===targetId);
+    if(!target)return;
+    livePreview={fromId:current.id,toId:target.id};
+    socket.emit('preview_target',{targetId:target.id});
+    setTimeout(turnParity,0);
+  });
+  socket.on('preview_target',x=>{if(x?.fromId&&x?.toId){livePreview={fromId:x.fromId,toId:x.toId};turnParity()}});
+  socket.on('room_state',x=>setTimeout(()=>{lobbySettings();boardTitle();if(livePreview&&x.turnIndex!==undefined){const cur=(x.players||state.players)[x.turnIndex];if(cur&&cur.id!==livePreview.fromId)livePreview=null}if(['game','discussion','round_decision'].includes(state.phase))turnParity()},0));
   socket.on('joined',()=>setTimeout(lobbySettings,0));
-  setInterval(()=>{lobbySettings();boardTitle()},500);
+  socket.on('round_result',()=>{livePreview=null});
+  setInterval(()=>{lobbySettings();boardTitle();if(state.phase==='game')turnParity()},250);
 })();
