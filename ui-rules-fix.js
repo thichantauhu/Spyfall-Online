@@ -7,8 +7,8 @@ function updateVoteBox(){
  if(state.phase==='vote1'){
   const list=state.players.filter(function(p){return p.id!==state.selfId;});
   const counts={};Object.values(state.votes||{}).forEach(function(id){counts[id]=(counts[id]||0)+1;});
-  box.innerHTML='<div class="eyebrow">TỐ CÁO CHUNG · LƯỢT 1</div><h3>Mọi người cùng bỏ phiếu</h3><p class="muted small">Tất cả người chơi đều được vote. Người hoặc nhiều người cùng có số phiếu cao nhất sẽ có 2 phút biện minh.</p><div class="vote-list">'+list.map(function(p){return '<button type="button" class="vote-btn '+(state.votes?.[state.selfId]===p.id?'voted':'')+'" data-v1="'+esc(p.name)+'" data-id="'+p.id+'">'+esc(p.name)+'<span>'+(counts[p.id]||'')+'</span></button>';}).join('')+'</div>';
-  box.querySelectorAll('[data-v1]').forEach(function(b){b.onclick=function(){socket.emit('accuse_vote',{targetId:b.dataset.id});};b.ondblclick=function(e){e.preventDefault();if(state.votes?.[state.selfId]===b.dataset.id)socket.emit('accuse_vote',{targetId:null});};});
+  box.innerHTML='<div class="eyebrow">TỐ CÁO CHUNG · LƯỢT 1</div><h3>Mọi người cùng bỏ phiếu</h3><p class="muted small">Tất cả người chơi đều được vote. Người hoặc nhiều người cùng có số phiếu cao nhất sẽ có 2 phút biện minh.</p><div class="vote-list">'+list.map(function(p){return '<button type="button" class="vote-btn '+(state.votes?.[state.selfId]===p.id?'voted':'')+'" data-v1="'+p.id+'">'+esc(p.name)+'<span>'+(counts[p.id]||'')+'</span></button>';}).join('')+'</div>';
+  box.querySelectorAll('[data-v1]').forEach(function(b){b.onclick=function(){socket.emit('accuse_vote',{targetId:b.dataset.v1});};b.ondblclick=function(e){e.preventDefault();if(state.votes?.[state.selfId]===b.dataset.v1)socket.emit('accuse_vote',{targetId:null});};});
  }
  if(state.phase==='vote2'){
   const can=(state.voteEligible||[]).includes(state.selfId);
@@ -19,5 +19,14 @@ function updateVoteBox(){
  }
  if(state.phase==='defense'){var t=Math.max(0,Math.ceil((state.defenseEndsAt-Date.now())/1000));var n=(state.voteCandidates||[]).map(function(id){var p=state.players.find(function(x){return x.id===id;});return p?p.name:'';}).filter(Boolean).join(', ');box.innerHTML='<div class="eyebrow">BIỆN MINH</div><h3>'+esc(n)+'</h3><div class="defense-time">Còn '+Math.floor(t/60)+':'+String(t%60).padStart(2,'0')+'</div><p class="muted small">Các người chơi có cùng số phiếu cao nhất đang biện minh. Hết 2 phút sẽ chuyển sang Vote phụ.</p>';}
 }
-socket.on('room_state',function(){setTimeout(updateVoteBox,20);});setTimeout(updateVoteBox,100);
+function showSpies(r){
+ var result=document.getElementById('resultScores');if(!result)return;
+ var old=document.getElementById('revealedSpies');if(old)old.remove();
+ var box=document.createElement('div');box.id='revealedSpies';box.className='round-winner-box';
+ var names=(r.spyIds||[]).map(function(id){var p=state.players.find(function(x){return x.id===id;});return p?p.name:'';}).filter(Boolean).join(', ');
+ box.innerHTML='<div class="winner-title">🕵️ SPY</div><div class="winner-names">'+esc(names||'Không xác định')+'</div>';
+ result.after(box);
+}
+function refresh(){updateVoteBox();if(state.phase==='defense')setTimeout(refresh,1000)}
+socket.on('room_state',function(){setTimeout(refresh,20);});socket.on('round_result',function(r){setTimeout(function(){showSpies(r);refresh();},30);});setTimeout(refresh,100);
 })();
