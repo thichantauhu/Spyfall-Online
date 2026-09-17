@@ -49,15 +49,18 @@
     if(!b)return;
     const current=state.players[state.turnIndex];
     if(state.phase!=='game'||!current||current.id!==state.selfId||state.pending)return;
-    const targetId=b.dataset.target;
-    const target=state.players.find(p=>p.id===targetId);
+    const target=state.players.find(p=>p.id===b.dataset.target);
     if(!target)return;
     livePreview={fromId:current.id,toId:target.id};
     socket.emit('preview_target',{targetId:target.id});
     setTimeout(turnParity,0);
   });
-  socket.on('preview_target',x=>{if(x?.fromId&&x?.toId){livePreview={fromId:x.fromId,toId:x.toId};turnParity()}});
-  socket.on('room_state',x=>setTimeout(()=>{lobbySettings();boardTitle();if(livePreview&&x.turnIndex!==undefined){const cur=(x.players||state.players)[x.turnIndex];if(cur&&cur.id!==livePreview.fromId)livePreview=null}if(['game','discussion','round_decision'].includes(state.phase))turnParity()},0));
+  socket.on('room_state',x=>setTimeout(()=>{
+    lobbySettings();boardTitle();
+    if(x?.turnPreview?.fromId&&x?.turnPreview?.toId)livePreview={fromId:x.turnPreview.fromId,toId:x.turnPreview.toId};
+    else if(x?.turnIndex!==undefined){const cur=(x.players||state.players)[x.turnIndex];if(!cur||!livePreview||cur.id!==livePreview.fromId)livePreview=null}
+    if(['game','discussion','round_decision'].includes(state.phase))turnParity();
+  },0));
   socket.on('joined',()=>setTimeout(lobbySettings,0));
   socket.on('round_result',()=>{livePreview=null});
   setInterval(()=>{lobbySettings();boardTitle();if(state.phase==='game')turnParity()},250);
