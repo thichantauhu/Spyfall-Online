@@ -9,6 +9,7 @@
     const card=document.querySelector('.action-card-v4');
     if(!card)return;
     const active=['game','discussion'].includes(state.phase)&&!state.paused;
+    card.parentNode.querySelectorAll('.vote-card').forEach(x=>{if(x.id!=='groupAccusePanel')x.remove()});
     const old=$('groupAccuseBtn');if(old)old.remove();
     const oldPanel=$('groupAccusePanel');if(oldPanel)oldPanel.remove();
     const solo=$('accuseBtn');
@@ -28,6 +29,6 @@
   };
   socket.on('accusation_group_start',()=>{groupActive=true;groupVotes={};window.renderSide()});
   socket.on('accusation_group_state',x=>{groupActive=!!x.active;groupVotes=x.votes||{};window.renderSide()});
-  socket.on('room_state',x=>{if(x.accusationGroupActive!==undefined){groupActive=!!x.accusationGroupActive;groupVotes=x.accusationGroupVotes||{}}});
+  socket.on('room_state',x=>{if(x.accusationGroupActive!==undefined){groupActive=!!x.accusationGroupActive;groupVotes=x.accusationGroupVotes||{};}});
   socket.on('round_result',()=>{groupActive=false;groupVotes={};});
 })();
