@@ -9,15 +9,10 @@ function patch(){
  if(side&&['game','discussion'].includes(state.phase)){
    let card=document.getElementById('commonVoteCard');
    if(!card){card=document.createElement('div');card.id='commonVoteCard';card.className='vote-card common-vote-card';side.appendChild(card)}
-   const others=state.players.filter(p=>p.id!==state.selfId);
-   const counts={};Object.values(state.votes||{}).forEach(id=>counts[id]=(counts[id]||0)+1);
+   const others=state.players.filter(p=>p.id!==state.selfId);const counts={};Object.values(state.votes||{}).forEach(id=>counts[id]=(counts[id]||0)+1);
    card.innerHTML=`<div class="eyebrow">TỐ CÁO CHUNG</div><h3>Bấm tên để bỏ phiếu</h3><p class="muted small">Đạt ít nhất 1/2 số người chơi sẽ tố cáo ngay. Nhấn đúp tên đã chọn để huỷ phiếu.</p><div class="vote-list">${others.map(p=>`<button type="button" class="vote-btn ${state.votes?.[state.selfId]===p.id?'voted':''}" data-common-vote="${p.id}">${esc(p.name)}<span>${counts[p.id]||''}</span></button>`).join('')}</div>`;
-   card.querySelectorAll('[data-common-vote]').forEach(b=>{
-     b.onclick=()=>socket.emit('accuse_vote',{targetId:b.dataset.commonVote});
-     b.ondblclick=e=>{e.preventDefault();if(state.votes?.[state.selfId]===b.dataset.commonVote)socket.emit('accuse_vote',{targetId:null});};
-   });
+   card.querySelectorAll('[data-common-vote]').forEach(b=>{b.onclick=()=>socket.emit('accuse_vote',{targetId:b.dataset.commonVote});b.ondblclick=e=>{e.preventDefault();if(state.votes?.[state.selfId]===b.dataset.commonVote)socket.emit('accuse_vote',{targetId:null});};});
  }
 }
 if(typeof socket!=='undefined'){socket.on('room_state',()=>setTimeout(patch,0));socket.on('role',()=>setTimeout(patch,0));socket.on('round_result',()=>setTimeout(patch,0));}
-new MutationObserver(()=>{if(typeof state!=='undefined'&&state.phase)patch()}).observe(document.body,{childList:true,subtree:true});
 })();
