@@ -1,5 +1,6 @@
 (()=>{
   const main=[120,150,180], extra=[60,90,120], locs=[20,25,30];
+  function boardTitle(){const title=document.querySelector('.board-title span');if(title&&Array.isArray(state.locations)&&state.locations.length)title.textContent=`📍 BẢNG ĐỊA ĐIỂM (${state.locations.length})`}
   function lobbySettings(){
     const box=document.querySelector('.room-settings'); if(!box)return;
     let wrap=document.getElementById('v2LobbySettings');
@@ -36,7 +37,7 @@
     $('turnInstruction').textContent=state.paused?'Game đang tạm dừng.':myTurn?'Chọn một người và đặt câu hỏi.':`Chờ ${current?.name||''} đặt câu hỏi.`;
   }
   window.renderTurn=turnParity;
-  socket.on('room_state',()=>setTimeout(()=>{lobbySettings();if(['game','discussion','round_decision'].includes(state.phase))turnParity()},0));
+  socket.on('room_state',()=>setTimeout(()=>{lobbySettings();boardTitle();if(['game','discussion','round_decision'].includes(state.phase))turnParity()},0));
   socket.on('joined',()=>setTimeout(lobbySettings,0));
-  setInterval(lobbySettings,500);
+  setInterval(()=>{lobbySettings();boardTitle()},500);
 })();
