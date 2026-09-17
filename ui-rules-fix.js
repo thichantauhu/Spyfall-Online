@@ -1,20 +1,23 @@
 (()=>{
-const originalEmit=socket.emit.bind(socket);socket.emit=(event,data={})=>{if(event==='create_room')data={...data,winScore:Number(document.getElementById('winScoreSelect')?.value||5)};return originalEmit(event,data)};
-function patch(){
- const host=state.selfId===state.hostId&&state.phase==='lobby';
- const sc=document.getElementById('spyCountSelect');if(sc){sc.value=String(state.spyCount||1);sc.disabled=!host;const note=document.getElementById('spySettingNote');if(note)note.textContent=host?'Host chọn 1 hoặc 2 Gián điệp. Hệ thống sẽ chọn ngẫu nhiên mỗi vòng.':`Mốc hiện tại: ${state.spyCount||1} Gián điệp. Chỉ Host được thay đổi.`;sc.onchange=()=>{if(host)socket.emit('set_spy_count',{spyCount:Number(sc.value)})}}
- const ws=document.getElementById('winScoreSelect');if(ws){ws.value=String(state.winScore||ws.value||5);ws.disabled=!host;const note=document.getElementById('winScoreNote');if(note)note.textContent=host?'Chỉ Host được thay đổi. Chọn mốc thắng: 5, 7 hoặc 10 điểm.':`Mục tiêu thắng: ${state.winScore||5} điểm. Chỉ Host được thay đổi.`;ws.onchange=()=>{if(host)socket.emit('set_win_score',{winScore:Number(ws.value)})}}
- const log=document.getElementById('qaLog');
- if(log&&state.qa){log.innerHTML=state.qa.length?state.qa.map((x,i)=>`<details class="qa-item"><summary>Lượt ${i+1} · <strong>${esc(x.from)}</strong> → <strong>${esc(x.to)}</strong></summary><div class="qa-detail"><div><strong>Hỏi:</strong> ${esc(x.q)}</div><div class="answer-line"><strong>Trả lời:</strong> ${esc(x.a)}</div></div></details>`).join(''):'<div class="muted small">Chưa có câu hỏi nào.</div>';}
- const btn=document.getElementById('accuseBtn'),chooser=document.getElementById('accuseChooser');if(state.role?.spy){if(btn)btn.remove();if(chooser)chooser.remove();}
- const role=document.getElementById('roleCard');if(role){role.classList.toggle('hard-hidden',state.roleVisible===false);role.onclick=e=>{if(e.target.closest('button'))return;state.roleVisible=!state.roleVisible;role.classList.toggle('role-hidden',!state.roleVisible);role.classList.toggle('hard-hidden',!state.roleVisible)}}
+function updateVoteBox(){
  const side=document.querySelector('.side-actions');
- if(side&&['game','discussion'].includes(state.phase)){
-  let card=document.getElementById('commonVoteCard');if(!card){card=document.createElement('div');card.id='commonVoteCard';card.className='vote-card common-vote-card';side.appendChild(card)}
-  const others=state.players.filter(p=>p.id!==state.selfId);const counts={};Object.values(state.votes||{}).forEach(id=>counts[id]=(counts[id]||0)+1);
-  card.innerHTML=`<div class="eyebrow">TỐ CÁO CHUNG</div><h3>Bấm tên để bỏ phiếu</h3><p class="muted small">Đạt ít nhất 1/2 số người chơi sẽ tố cáo ngay. Nhấn đúp tên đã chọn để huỷ phiếu.</p><div class="vote-list">${others.map(p=>`<button type="button" class="vote-btn ${state.votes?.[state.selfId]===p.id?'voted':''}" data-common-vote="${p.id}">${esc(p.name)}<span>${counts[p.id]||''}</span></button>`).join('')}</div>`;
-  card.querySelectorAll('[data-common-vote]').forEach(b=>{b.onclick=()=>socket.emit('accuse_vote',{targetId:b.dataset.commonVote});b.ondblclick=e=>{e.preventDefault();if(state.votes?.[state.selfId]===b.dataset.commonVote)socket.emit('accuse_vote',{targetId:null});};});
+ if(!side)return;
+ const box=side.querySelector('.vote-card');
+ if(!box)return;
+ if(state.phase==='vote1'){
+  const list=state.players.filter(function(p){return p.id!==state.selfId;});
+  const counts={};Object.values(state.votes||{}).forEach(function(id){counts[id]=(counts[id]||0)+1;});
+  box.innerHTML='<div class="eyebrow">TỐ CÁO CHUNG · LƯỢT 1</div><h3>Mọi người cùng bỏ phiếu</h3><p class="muted small">Tất cả người chơi đều được vote. Người hoặc nhiều người cùng có số phiếu cao nhất sẽ có 2 phút biện minh.</p><div class="vote-list">'+list.map(function(p){return '<button type="button" class="vote-btn '+(state.votes?.[state.selfId]===p.id?'voted':'')+'" data-v1="'+esc(p.name)+'" data-id="'+p.id+'">'+esc(p.name)+'<span>'+(counts[p.id]||'')+'</span></button>';}).join('')+'</div>';
+  box.querySelectorAll('[data-v1]').forEach(function(b){b.onclick=function(){socket.emit('accuse_vote',{targetId:b.dataset.id});};b.ondblclick=function(e){e.preventDefault();if(state.votes?.[state.selfId]===b.dataset.id)socket.emit('accuse_vote',{targetId:null});};});
  }
+ if(state.phase==='vote2'){
+  const can=(state.voteEligible||[]).includes(state.selfId);
+  const list=state.players.filter(function(p){return p.id!==state.selfId;});
+  const counts={};Object.values(state.vote2||{}).forEach(function(id){counts[id]=(counts[id]||0)+1;});
+  box.innerHTML='<div class="eyebrow">TỐ CÁO CHUNG · VOTE PHỤ</div><h3>'+(can?'Bỏ phiếu lần 2':'Bạn không được vote')+'</h3><p class="muted small">'+(can?'Những người tình nghi ở lượt 1 không được vote. Bạn có thể chọn người chơi khác. Ai có nhiều phiếu nhất sẽ bị tố cáo.':'Bạn thuộc nhóm có số phiếu cao nhất ở lượt 1 nên không được vote phụ.')+'</p>'+(can?'<div class="vote-list">'+list.map(function(p){return '<button type="button" class="vote-btn '+(state.vote2?.[state.selfId]===p.id?'voted':'')+'" data-v2="'+p.id+'">'+esc(p.name)+'<span>'+(counts[p.id]||'')+'</span></button>';}).join('')+'</div>':'');
+  if(can)box.querySelectorAll('[data-v2]').forEach(function(b){b.onclick=function(){socket.emit('accuse_vote2',{targetId:b.dataset.v2});};b.ondblclick=function(e){e.preventDefault();if(state.vote2?.[state.selfId]===b.dataset.v2)socket.emit('accuse_vote2',{targetId:null});};});
+ }
+ if(state.phase==='defense'){var t=Math.max(0,Math.ceil((state.defenseEndsAt-Date.now())/1000));var n=(state.voteCandidates||[]).map(function(id){var p=state.players.find(function(x){return x.id===id;});return p?p.name:'';}).filter(Boolean).join(', ');box.innerHTML='<div class="eyebrow">BIỆN MINH</div><h3>'+esc(n)+'</h3><div class="defense-time">Còn '+Math.floor(t/60)+':'+String(t%60).padStart(2,'0')+'</div><p class="muted small">Các người chơi có cùng số phiếu cao nhất đang biện minh. Hết 2 phút sẽ chuyển sang Vote phụ.</p>';}
 }
-socket.on('room_state',r=>{if(r.winScore)state.winScore=r.winScore;if(r.spyCount)state.spyCount=r.spyCount;setTimeout(patch,0)});socket.on('role',()=>setTimeout(patch,0));socket.on('round_result',()=>setTimeout(patch,0));setTimeout(patch,0);
+socket.on('room_state',function(){setTimeout(updateVoteBox,20);});setTimeout(updateVoteBox,100);
 })();
