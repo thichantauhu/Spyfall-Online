@@ -20,8 +20,25 @@
     if(m){m.value=String(main.includes(Number(state.mainTimeSec))?state.mainTimeSec:120);m.disabled=!host}
     if(e){e.value=String(extra.includes(Number(state.extraTimeSec))?state.extraTimeSec:60);e.disabled=!host}
   }
+  function qaExpanded(){
+    if(!document.getElementById('v2QaStyle')){
+      const style=document.createElement('style');style.id='v2QaStyle';style.textContent='.qa-log{max-height:none!important;height:auto!important;overflow:visible!important}.game-grid>.card:first-child{overflow:visible!important}';document.head.appendChild(style);
+    }
+  }
+  function extraRoundButton(){
+    const card=document.querySelector('.action-card-v4');if(!card)return;
+    let btn=document.getElementById('extraRoundVoteBtn');
+    if(state.phase==='round_decision'){
+      if(!btn){
+        btn=document.createElement('button');btn.id='extraRoundVoteBtn';btn.className='secondary';btn.textContent='🗳️ Biểu quyết thêm vòng chơi phụ';
+        const guess=card.querySelector('#guessBtn');
+        if(guess)guess.insertAdjacentElement('afterend',btn);else card.appendChild(btn);
+      }
+      btn.disabled=false;btn.onclick=()=>window.openRoundDecision?.();
+    }else if(btn)btn.remove();
+  }
   const oldLobby=window.renderLobby;
-  if(oldLobby)window.renderLobby=function(){oldLobby();lobbySettings()};
+  if(oldLobby)window.renderLobby=function(){oldLobby();lobbySettings();qaExpanded();extraRoundButton()};
   function turnParity(){
     const current=state.players[state.turnIndex], pending=state.pending;
     if(state.phase==='discussion'){$('turnLabel').textContent='THẢO LUẬN';$('turnInstruction').textContent='Tất cả đã được hỏi. Thảo luận và bỏ phiếu.';return}
@@ -56,12 +73,12 @@
     setTimeout(turnParity,0);
   });
   socket.on('room_state',x=>setTimeout(()=>{
-    lobbySettings();boardTitle();
+    lobbySettings();boardTitle();qaExpanded();extraRoundButton();
     if(x?.turnPreview?.fromId&&x?.turnPreview?.toId)livePreview={fromId:x.turnPreview.fromId,toId:x.turnPreview.toId};
     else if(x?.turnIndex!==undefined){const cur=(x.players||state.players)[x.turnIndex];if(!cur||!livePreview||cur.id!==livePreview.fromId)livePreview=null}
     if(['game','discussion','round_decision'].includes(state.phase))turnParity();
   },0));
-  socket.on('joined',()=>setTimeout(lobbySettings,0));
-  socket.on('round_result',()=>{livePreview=null});
-  setInterval(()=>{lobbySettings();boardTitle();if(state.phase==='game')turnParity()},250);
+  socket.on('joined',()=>setTimeout(()=>{lobbySettings();qaExpanded();extraRoundButton()},0));
+  socket.on('round_result',()=>{livePreview=null;extraRoundButton()});
+  setInterval(()=>{lobbySettings();boardTitle();qaExpanded();extraRoundButton();if(state.phase==='game')turnParity()},250);
 })();
