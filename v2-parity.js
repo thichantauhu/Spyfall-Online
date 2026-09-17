@@ -25,20 +25,38 @@
       const style=document.createElement('style');style.id='v2QaStyle';style.textContent='.qa-log{max-height:none!important;height:auto!important;overflow:visible!important}.game-grid>.card:first-child{overflow:visible!important}';document.head.appendChild(style);
     }
   }
+  function actionLayout(){
+    const card=document.querySelector('.action-card-v4');if(!card)return;
+    if(!document.getElementById('v2ActionStyle')){
+      const style=document.createElement('style');style.id='v2ActionStyle';style.textContent='.action-card-v4{display:flex!important;flex-direction:column!important;gap:12px!important}.action-card-v4>button{width:100%!important;min-height:44px!important;margin:0!important}.action-card-v4>#accuseChooser{width:100%!important;margin:-6px 0 0!important}.action-card-v4>#pauseBtn{display:none!important}';document.head.appendChild(style);
+    }
+    const solo=document.getElementById('accuseBtn');
+    const group=document.getElementById('groupAccuseBtn');
+    const guess=document.getElementById('guessBtn');
+    const extraBtn=document.getElementById('extraRoundVoteBtn');
+    const leave=document.getElementById('leaveGameBtn');
+    [solo,group,guess,extraBtn,leave].filter(Boolean).forEach(b=>card.appendChild(b));
+    const chooser=document.getElementById('accuseChooser');
+    if(chooser&&solo)solo.insertAdjacentElement('afterend',chooser);
+  }
   function extraRoundButton(){
     const card=document.querySelector('.action-card-v4');if(!card)return;
     let btn=document.getElementById('extraRoundVoteBtn');
-    if(state.phase==='round_decision'){
+    if(['game','discussion','round_decision'].includes(state.phase)){
       if(!btn){
         btn=document.createElement('button');btn.id='extraRoundVoteBtn';btn.className='secondary';btn.textContent='🗳️ Biểu quyết thêm vòng chơi phụ';
-        const guess=card.querySelector('#guessBtn');
-        if(guess)guess.insertAdjacentElement('afterend',btn);else card.appendChild(btn);
+        card.appendChild(btn);
       }
-      btn.disabled=false;btn.onclick=()=>window.openRoundDecision?.();
+      btn.disabled=state.phase!=='round_decision';
+      btn.title=state.phase==='round_decision'?'Mở bảng biểu quyết thêm vòng chơi phụ':'Chỉ có thể biểu quyết sau khi tất cả câu hỏi đã được hỏi và trả lời.';
+      btn.onclick=()=>{if(state.phase==='round_decision')window.openRoundDecision?.()};
     }else if(btn)btn.remove();
+    actionLayout();
   }
   const oldLobby=window.renderLobby;
   if(oldLobby)window.renderLobby=function(){oldLobby();lobbySettings();qaExpanded();extraRoundButton()};
+  const oldSide=window.renderSide;
+  if(oldSide)window.renderSide=function(){oldSide();extraRoundButton();actionLayout()};
   function turnParity(){
     const current=state.players[state.turnIndex], pending=state.pending;
     if(state.phase==='discussion'){$('turnLabel').textContent='THẢO LUẬN';$('turnInstruction').textContent='Tất cả đã được hỏi. Thảo luận và bỏ phiếu.';return}
