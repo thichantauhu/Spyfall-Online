@@ -5,9 +5,10 @@ const path=require('path');
 const fs=require('fs');
 const app=express();
 const server=http.createServer(app);
-const io=new Server(server);
+const io=new Server(server,{cors:{origin:true,methods:['GET','POST']},transports:['polling','websocket'],allowEIO3:true,pingTimeout:20000,pingInterval:25000});
 app.use(express.static(path.join(__dirname)));
-app.get('/health',(_,res)=>res.json({ok:true}));
+app.get('/health',(_,res)=>res.json({ok:true,socketio:true}));
+app.get('/socket-test',(_,res)=>res.json({ok:true,socketio:!!io}));
 
 const roles={
 'Đại học':['Giáo sư','Sinh viên','Giảng viên','Hiệu trưởng','Trợ giảng','Nhân viên thư viện','Bảo vệ','Nhân viên phòng thí nghiệm','Cố vấn học tập','Nhân viên hành chính'],
@@ -75,7 +76,7 @@ function startQuestionRound(r,extra){r.phase='game';r.round=extra?2:1;r.extraRou
 function startRound(r){if(r.players.length<3||ALL_LOCATIONS.length<20)return;r.round=0;r.locations=makeRoundLocations(r.locationCount||20);r.location=r.locations[Math.floor(Math.random()*r.locations.length)];r.spyIds=[];const pool=[...r.players];for(let i=0;i<r.spyCount;i++){const j=Math.floor(Math.random()*pool.length);r.spyIds.push(pool.splice(j,1)[0].id)}const rolePool=[...roleListFor(r.location)];for(let i=rolePool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[rolePool[i],rolePool[j]]=[rolePool[j],rolePool[i]]}r.players.filter(p=>!r.spyIds.includes(p.id)).forEach((p,i)=>p.role=rolePool[i%rolePool.length]);r.qa=[];r.chat=[];r.matchOver=false;r.matchWinners=[];startQuestionRound(r,false)}
 function removePlayer(r,id){r.players=r.players.filter(p=>p.id!==id);r.askedIds.delete(id);r.votes.delete(id);if(r.hostId===id&&r.players.length)r.hostId=r.players[0].id}
 
-io.on('connection',socket=>{console.log(`[socket] connected ${socket.id} transport=${socket.conn?.transport?.name||'unknown'}`);socket.on('disconnect',reason=>console.log(`[socket] disconnected ${socket.id} reason=${reason}`));
+io.on('connection',socket=>{console.log(`[socket] connected ${socket.id} transport=${socket.conn?.transport?.name||'unknown'}`);console.log(`[socket] connected ${socket.id} transport=${socket.conn?.transport?.name||'unknown'}`);socket.on('disconnect',reason=>console.log(`[socket] disconnected ${socket.id} reason=${reason}`));
 socket.on('create_room',({name,spyCount=1,locationCount=20,mainTimeSec=120,extraTimeSec=60})=>{console.log(`[room] create request socket=${socket.id} name=${String(name||'').slice(0,20)}`);const code=makeCode();const p={id:socket.id,name:String(name||'Người chơi').trim().slice(0,20)||'Người chơi',score:0,role:null};const sc=Number(spyCount)===2?2:1;const r={code,hostId:p.id,players:[p],phase:'lobby',round:0,turnIndex:0,qa:[],pending:null,askedIds:new Set(),lastQuestionerId:null,chat:[],votes:new Map(),spyCount:sc,locationCount:[20,25,30].includes(Number(locationCount))?Number(locationCount):20,mainTimeSec:[120,150,180].includes(Number(mainTimeSec))?Number(mainTimeSec):120,extraTimeSec:[60,90,120].includes(Number(extraTimeSec))?Number(extraTimeSec):60,spyIds:[],accusationGroupActive:false,accusationGroupVotes:new Map(),location:null,locations:[],matchOver:false,matchWinners:[],extraRound:false,turnPreview:null,paused:false,remainingMs:0};rooms.set(code,r);socket.join(code);socket.roomCode=code;socket.playerId=socket.id;socket.emit('joined',{room:code,selfId:socket.id});emitRoom(r)});
 socket.on('join_room',({code,name})=>{console.log(`[room] join request socket=${socket.id} code=${String(code||'').toUpperCase()}`);const r=rooms.get(String(code||'').toUpperCase());if(!r)return socket.emit('error_msg','Không tìm thấy phòng.');if(!['lobby','result'].includes(r.phase)||r.matchOver)return socket.emit('error_msg','Ván đang diễn ra hoặc game đã kết thúc.');if(r.players.length>=12)return socket.emit('error_msg','Phòng đã đủ 12 người.');const p={id:socket.id,name:String(name||'Người chơi').trim().slice(0,20)||'Người chơi',score:0,role:null};r.players.push(p);socket.join(r.code);socket.roomCode=r.code;socket.playerId=socket.id;socket.emit('joined',{room:r.code,selfId:socket.id});emitRoom(r)});
 socket.on('set_spy_count',({spyCount})=>{const r=rooms.get(socket.roomCode);if(!r||r.phase!=='lobby'||r.hostId!==socket.id)return;const n=Number(spyCount);if(n===1||n===2){r.spyCount=n;emitRoom(r)}});
