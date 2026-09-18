@@ -4,7 +4,7 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "start": "node -r ./rules-preload.js server-v2.js"
+    "start": "node server-v2.js"
   },
   "dependencies": {
     "express": "^4.21.2",
