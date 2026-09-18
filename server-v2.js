@@ -6,6 +6,7 @@ const fs=require('fs');
 const app=express();
 const server=http.createServer(app);
 const io=new Server(server,{cors:{origin:true,methods:['GET','POST']},transports:['polling','websocket'],allowEIO3:true,pingTimeout:20000,pingInterval:25000});
+app.get('/socket-client.js',(req,res)=>res.sendFile(path.join(__dirname,'node_modules/socket.io/client-dist/socket.io.min.js'),{headers:{'Cache-Control':'no-store'}}));
 app.use(express.static(path.join(__dirname)));
 app.get('/health',(_,res)=>res.json({ok:true,socketio:true}));
 app.get('/socket-test',(_,res)=>res.json({ok:true,socketio:!!io}));
