@@ -8,7 +8,8 @@ const server=http.createServer(app);
 const io=new Server(server,{cors:{origin:true,methods:['GET','POST']},transports:['polling','websocket'],allowEIO3:true,pingTimeout:20000,pingInterval:25000});
 io.engine.on('connection_error',err=>console.error('[engine] connection_error',JSON.stringify({code:err.code,message:err.message,context:err.context})));
 app.get('/socket-client.js',(req,res)=>res.sendFile(path.join(__dirname,'node_modules/socket.io/client-dist/socket.io.min.js'),{headers:{'Cache-Control':'no-store'}}));
-app.use(express.static(path.join(__dirname)));
+app.use((req,res,next)=>{res.set('Cache-Control','no-store, no-cache, must-revalidate, proxy-revalidate');next()});
+app.use(express.static(path.join(__dirname),{etag:false,maxAge:0}));
 app.get('/health',(_,res)=>res.json({ok:true,socketio:true}));
 app.get('/socket-test',(_,res)=>res.json({ok:true,socketio:!!io}));
 
@@ -98,4 +99,4 @@ socket.on('spy_guess_location',({location})=>{const r=rooms.get(socket.roomCode)
 socket.on('next_round',()=>{const r=rooms.get(socket.roomCode);if(!r||r.phase!=='result'||r.matchOver)return;startRound(r)});
 socket.on('disconnect',()=>{const r=rooms.get(socket.roomCode);if(!r||socket.playerId!==socket.id)return;const id=socket.id,wasSpy=r.spyIds.includes(id);removePlayer(r,id);if(!r.players.length){rooms.delete(r.code);return}if(['game','round_decision'].includes(r.phase)&&wasSpy){const d={};r.players.filter(p=>!r.spyIds.includes(p.id)).forEach(p=>award(r,p.id,1,d));finishRound(r,{title:'👥 Người thường thắng!',detail:'Một Gián điệp đã rời phòng.',winnerType:'nonspy',winnerNames:r.players.map(p=>p.name),deltas:d});return}emitRoom(r)})});
 
-app.get('/',(req,res,next)=>{res.set('Cache-Control','no-store, no-cache, must-revalidate, proxy-revalidate');next()});const PORT=process.env.PORT||10000;server.listen(PORT,'0.0.0.0',()=>{console.log('Spyfall server listening on '+PORT);setTimeout(()=>{const u='http://127.0.0.1:'+PORT+'/socket.io/?EIO=4&transport=polling&t='+Date.now();const req=http.get(u,res=>{let data='';res.on('data',c=>data+=c);res.on('end',()=>console.log('[self-test] socket handshake status='+res.statusCode+' body='+data.slice(0,180)))});req.on('error',e=>console.error('[self-test] socket handshake FAILED',e.message));req.setTimeout(5000,()=>{req.destroy();console.error('[self-test] socket handshake TIMEOUT')});},1000)});
+app.get('/',(req,res,next)=>{res.set('Cache-Control','no-store, no-cache, must-revalidate, proxy-revalidate');next()});const PORT=process.env.PORT||10000;server.listen(PORT,'0.0.0.0',()=>{console.log('Spyfall server listening on '+PORT);setTimeout(()=>{const u='http://127.0.0.1:'+PORT+'/socket.io/?EIO=4&transport=polling&t='+Date.now();const req=http.get(u,res=>{let data='';res.on('data',c=>{data+=c;console.log('[self-test] socket handshake status='+res.statusCode+' body='+data.slice(0,180));req.destroy()})});req.on('error',e=>console.error('[self-test] socket handshake FAILED',e.message));req.setTimeout(5000,()=>{req.destroy();console.error('[self-test] socket handshake TIMEOUT')});},1000)});
