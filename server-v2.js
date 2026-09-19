@@ -29,7 +29,8 @@ const publicState=r=>({
 });
 const emitRoom=r=>io.to(r.code).emit('room_state',publicState(r));
 function addChat(r,from,message){r.chat.push({from,message,time:Date.now(),system:!from});if(r.chat.length>100)r.chat.shift()}
-function award(r,id,n,d){const p=r.players.find(x=>x.id===id);if(p&&n){p.score+=n;d[id]=(d[id]||0)+n}}\nfunction changeScore(r,id,n,d){const p=r.players.find(x=>x.id===id);if(p&&n){p.score+=n;d[id]=(d[id]||0)+n}}
+function award(r,id,n,d){const p=r.players.find(x=>x.id===id);if(p&&n){p.score+=n;d[id]=(d[id]||0)+n}}
+function changeScore(r,id,n,d){const p=r.players.find(x=>x.id===id);if(p&&n){p.score+=n;d[id]=(d[id]||0)+n}}
 function clearTimers(r){if(r.timerId)clearTimeout(r.timerId);if(r.noticeTimer)clearTimeout(r.noticeTimer);if(r.subTimer)clearTimeout(r.subTimer)}
 function finishRound(r,o){if(r.phase==='result')return;r.phase='result';clearTimers(r);
  const winners=r.players.filter(p=>p.score>=5);
