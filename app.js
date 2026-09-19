@@ -1,5 +1,5 @@
-const socket=window.spyfallSocket=io({path:'/socket.io',transports:['polling','websocket'],upgrade:true,reconnection:true,reconnectionAttempts:Infinity,reconnectionDelay:500,reconnectionDelayMax:3000,timeout:10000,forceNew:true});
-socket.on('connect_error',err=>{const e=document.getElementById('lobbyMessage');if(e&&!socket.connected)e.textContent='Đang kết nối máy chủ...';console.warn('[Spyfall] Socket connection error:',err?.message||err)});
+const socket=window.spyfallSocket=io();
+socket.on('connect_error',err=>{const e=document.getElementById('lobbyMessage');if(e&&!socket.connected)e.textContent='Lỗi kết nối realtime: '+(err?.message||'không xác định');console.error('[Spyfall] Socket connection error:',err)});
 socket.on('connect',()=>{const e=document.getElementById('lobbyMessage');if(e)e.textContent='';console.info('[Spyfall] Realtime connected:',socket.id,socket.io.engine?.transport?.name)});
 const state={room:null,selfId:null,players:[],hostId:null,phase:'lobby',round:0,turnIndex:0,timer:0,role:null,roleVisible:true,qa:[],scores:{},pending:null,askedIds:[],lastQuestionerId:null,chat:[],votes:{},guessMode:false,selectedTarget:'',spyCount:1,matchOver:false,matchWinners:[],extraRound:false,turnPreview:null,paused:false};
 const $=id=>document.getElementById(id);const esc=s=>String(s??'').replace(/[&<>\'\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[c]));
