@@ -16,8 +16,8 @@ const shuffle=a=>[...a].sort(()=>Math.random()-.5);
 const normalizeSettings=s=>({
  locationCount:[20,25,30].includes(Number(s?.locationCount))?Number(s.locationCount):30,
  questionRounds:[1,2].includes(Number(s?.questionRounds))?Number(s.questionRounds):1,
- mainTime:[120,150,180].includes(Number(s?.mainTime))?Number(s.mainTime):180,
- subTime:[60,90,120].includes(Number(s?.subTime))?Number(s.subTime):120
+ mainTime:[120,150,180].includes(Number(s?.mainTime))?Number(s.mainTime):120,
+ subTime:[60,90,120].includes(Number(s?.subTime))?Number(s.subTime):60
 });
 const publicState=r=>({
  room:r.code,players:r.players.map(p=>({id:p.id,name:p.name,score:p.score})),hostId:r.hostId,
