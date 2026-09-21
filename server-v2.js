@@ -4,7 +4,7 @@ const{Server}=require('socket.io');
 const path=require('path');
 const app=express();
 const server=http.createServer(app);
-const io=new Server(server);
+const io=new Server(server,{cors:{origin:true,methods:['GET','POST'],credentials:true},transports:['polling','websocket']});
 app.use(express.static(path.join(__dirname)));
 app.get('/health',(_,res)=>res.json({ok:true}));
 
@@ -52,8 +52,8 @@ function startRound(r){if(r.players.length<3)return;r.settings=normalizeSettings
  emitRoom(r)
 }
 function removePlayer(r,id){r.players=r.players.filter(p=>p.id!==id);r.askedIds.delete(id);r.askedCounts.delete(id);r.votes.delete(id);if(r.hostId===id&&r.players.length)r.hostId=r.players[0].id}
-io.on('connection',socket=>{
- socket.on('create_room',({name,spyCount=1,settings}={})=>{const code=makeCode();const p={id:socket.id,name:String(name||'Người chơi').trim().slice(0,20)||'Người chơi',score:0};const r={code,hostId:p.id,players:[p],phase:'lobby',round:0,turnIndex:0,qa:[],pending:null,askedIds:new Set(),askedCounts:new Map(),lastQuestionerId:null,chat:[],votes:new Map(),spyCount:Number(spyCount)===2?2:1,spyIds:[],location:null,roundLocations:allLocations,matchOver:false,matchWinners:[],settings:normalizeSettings(settings)};rooms.set(code,r);socket.join(code);socket.roomCode=code;socket.playerId=socket.id;socket.emit('joined',{room:code,selfId:socket.id});emitRoom(r)});
+io.on('connection',socket=>{console.log('Socket connected:',socket.id);
+ socket.on('create_room',({name,spyCount=1,settings}={})=>{const code=makeCode();const p={id:socket.id,name:String(name||'Người chơi').trim().slice(0,20)||'Người chơi',score:0};const r={code,hostId:p.id,players:[p],phase:'lobby',round:0,turnIndex:0,qa:[],pending:null,askedIds:new Set(),askedCounts:new Map(),lastQuestionerId:null,chat:[],votes:new Map(),paused:false,extraVoteOpen:false,extraVotes:new Map(),extraRound:false,spyCount:Number(spyCount)===2?2:1,spyIds:[],location:null,roundLocations:allLocations,matchOver:false,matchWinners:[],settings:normalizeSettings(settings)};rooms.set(code,r);socket.join(code);socket.roomCode=code;socket.playerId=socket.id;socket.emit('joined',{room:code,selfId:socket.id});emitRoom(r)});
  socket.on('join_room',({code,name}={})=>{const r=rooms.get(String(code||'').toUpperCase());if(!r)return socket.emit('error_msg','Không tìm thấy phòng.');if(!['lobby','result'].includes(r.phase)||r.matchOver)return socket.emit('error_msg','Ván đang diễn ra hoặc game đã kết thúc.');if(r.players.length>=12)return socket.emit('error_msg','Phòng đã đủ 12 người.');const p={id:socket.id,name:String(name||'Người chơi').trim().slice(0,20)||'Người chơi',score:0};r.players.push(p);socket.join(r.code);socket.roomCode=r.code;socket.playerId=socket.id;socket.emit('joined',{room:r.code,selfId:socket.id});emitRoom(r)});
  socket.on('set_settings',({settings}={})=>{const r=rooms.get(socket.roomCode);if(!r||r.phase!=='lobby')return;r.settings=normalizeSettings({...r.settings,...settings});emitRoom(r)});
  socket.on('set_spy_count',({spyCount}={})=>{const r=rooms.get(socket.roomCode);if(!r||r.phase!=='lobby')return;const n=Number(spyCount);if(n===1||n===2){r.spyCount=n;emitRoom(r)}});
