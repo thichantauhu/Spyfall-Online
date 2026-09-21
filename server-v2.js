@@ -32,7 +32,7 @@ function addChat(r,from,message){r.chat.push({from,message,time:Date.now(),syste
 function award(r,id,n,d){const p=r.players.find(x=>x.id===id);if(p&&n){p.score+=n;d[id]=(d[id]||0)+n}}
 function changeScore(r,id,n,d){const p=r.players.find(x=>x.id===id);if(p&&n){p.score+=n;d[id]=(d[id]||0)+n}}
 function clearTimers(r){if(r.timerId)clearTimeout(r.timerId);if(r.noticeTimer)clearTimeout(r.noticeTimer);if(r.subTimer)clearTimeout(r.subTimer);r.timerId=null;r.noticeTimer=null;r.subTimer=null}
-function finishRound(r,o){if(r.phase==='result')return;r.phase='result';clearTimers(r);
+function finishRound(r,o){if(r.phase==='result')return;r.phase='result';clearTimers(r);r.paused=false;r.extraVoteOpen=false;r.extraVotes=new Map();r.pending=null;r.votes=new Map();
  const winners=r.players.filter(p=>p.score>=5);
  if(winners.length&&!r.matchOver){r.matchOver=true;r.matchWinners=winners.map(p=>p.id);o.detail+=` ${winners.map(p=>p.name).join(', ')} đã đạt 5 điểm và thắng toàn bộ game!`}
  const scores=Object.fromEntries(r.players.map(p=>[p.id,p.score]));
